@@ -121,7 +121,7 @@ class PoseEstimator:
 
         return humans
 
-
+pose_flag = 0
 class TfPoseEstimator:
     # TODO : multi-scale
 
@@ -202,6 +202,7 @@ class TfPoseEstimator:
 
     @staticmethod
     def draw_humans(npimg, humans, imgcopy=False):
+        global pose_flag
         if imgcopy:
             npimg = np.copy(npimg)
         image_h, image_w = npimg.shape[:2]
@@ -209,7 +210,7 @@ class TfPoseEstimator:
         peaks_flag = [3,4,6,7]
         human_flag = 0
         result_txt = ''
-        distance = ''
+        distance = 0.0
         spead = ''
         result = 0
         for human in humans:
@@ -238,8 +239,10 @@ class TfPoseEstimator:
             #if 0 in human.body_parts.keys():
             #    cv2.putText(npimg,str(human_flag),(centers[0][0]-5,centers[0][1]-15),0, 0.7, (0,255,0),2)
             if 1 in human.body_parts.keys(): 
-                result,distance,spead = getJudge(peaks,tuple(centers[1]))
-            
+                result,pose_flag_m = getJudge(peaks,pose_flag)
+                #global pose_flag
+                pose_flag = pose_flag_m
+                distance,spead = distance_m(tuple(centers[1]))
             if result == 1:
                 #print('left')
                 result_txt = 'Swing_right'
@@ -257,7 +260,7 @@ class TfPoseEstimator:
                 #npimg = cv2.line(npimg, centers[pair[0]], centers[pair[1]], common.CocoColors[pair_order], 3)
                 cv2.line(npimg, centers[pair[0]], centers[pair[1]], common.CocoColors[pair_order], 3)
 
-        return npimg,result_txt,str(distance),spead
+        return npimg,result_txt,"%.2f"%(distance),spead
     """
     def _getJudge(self,all_peak):
         self.peak_queue.append(all_peak)
@@ -440,16 +443,16 @@ class TfPoseEstimator:
 
 peak_queue = []
 center_queue = []
-pose_flag = 0
+#pose_flag = 0
 Distance = 0.0
-def getJudge(all_peak,center):
+def getJudge(all_peak,pose_flag):
     global peak_queue
-    global pose_flag
-    global Distance
-    global center_queue
+    #global pose_flag
+    #global Distance
+    #global center_queue
     peak_queue.append(all_peak)
-    center_queue.append(center)
-    #print('===>peak_queue:'+str(peak_queue))
+    #center_queue.append(center)
+    #print('===>center_queue:'+str(center_queue))
     peaks = []
     result = 0
     if len(peak_queue) >=3:
@@ -457,18 +460,26 @@ def getJudge(all_peak,center):
         print('result:'+str(result))
         peak_queue.pop(0)
         peak_queue.pop(0)
+    #if result == pose_flag:
+    #    #pose_flag = 0
+    #    print(">>>>>>>>>>>>>>>>>>>>return::::::::"+str(result))
+    return result,pose_flag
+    #else:
+    #    pose_flag = result
+    #    return 0,pose_flag
+
+def distance_m(center):
+    global Distance
+    global center_queue
+    center_queue.append(center)
     spead = ''
     if len(center_queue) >=3:
         #distance
-        distance,spead = get_distance(center_queue[2],center_queue[1])
+        distance,spead = get_distance(center_queue[2],center_queue[0])
         Distance += float(distance)
-
-    if result == pose_flag:
-        pose_flag = 0
-        return result,Distance,spead
-    else:
-        pose_flag = result
-        return 0,Distance,spead
+        center_queue.pop(0)
+        center_queue.pop(0)
+    return Distance,spead
 
 
 def Judgment(new_peaks,old_peaks):
@@ -500,16 +511,20 @@ def Judgment(new_peaks,old_peaks):
     if len(right_hand1) > 1 and len(right_hand2) > 1:
         k = (right_hand1[1] - right_hand2[1]) / (right_hand1[0] - right_hand2[0]) if not right_hand1[0] - right_hand2[0] == 0 else 0
         distance = int(((right_hand1[1] - right_hand2[1]) ** 2 + (right_hand1[0] - right_hand2[0]) ** 2) ** 0.5)
+        #print("distance>>>>>>>>>>>>>>>"+str(distance))
     #elif not isinstance(right_arm1,int) and not isinstance(right_arm2,int):
     elif len(right_arm1) >1 and len(right_arm2) >1:
         k = (right_arm1[1] - right_arm2[1]) / (right_arm1[0] - right_arm2[0]) if not right_arm1[0] - right_arm2[0] == 0 else 0
         distance = int(((right_arm1[1] - right_arm2[1]) ** 2 + (right_arm1[0] - right_arm2[0]) ** 2) ** 0.5)
+        #print("distance>>>>>>>>>>>>>>>"+str(distance))
     elif len(left_hand1) >1 and len(left_hand2) >1:
         k = (left_hand1[1] - left_hand2[1]) / (left_hand1[0] - left_hand2[0]) if not left_hand1[0] - left_hand2[0] == 0 else 0
         distance = int(((left_hand1[1] - left_hand2[1]) ** 2 + (left_hand1[0] - left_hand2[0]) ** 2) ** 0.5)
+        #print("distance>>>>>>>>>>>>>>>"+str(distance))
     elif len(left_arm1) >1 and len(left_arm2) >1:
         k = (left_arm1[1] - left_arm2[1]) / (left_arm1[0] - left_arm2[0]) if not left_arm1[0] - left_arm2[0] == 0 else 0
         distance = int(((left_arm1[1] - left_arm2[1]) ** 2 + (left_arm1[0] - left_arm2[0]) ** 2) ** 0.5)
+        #print("distance>>>>>>>>>>>>>>>"+str(distance))
     else:
         return 0
     print('>>> k='+str(k)+' >>>distance='+str(distance)) 
@@ -524,15 +539,17 @@ def Judgment(new_peaks,old_peaks):
 def get_distance(center2,center0):
     y1 = center2[1] 
     s = center2[0] - center0[0]
+    #print('s>>>>>>>>>>>>>>>>:'+str(s))
     k = 1.17
     w1 = 1828 / 663 #2.76
     w2 = 1828 / 238 
     w_distance = s - k * (y1 - 336) * s / 663 * w1
     h_distance = (center2[1] - center0[1]) * w2
+    #print('h_distance>>>>>>>>>>>>>>>>:'+str(h_distance))
     all_distance = int(w_distance ** 2 + h_distance ** 2) ** 0.5
     spead = all_distance / (2/25)
-    print('==================distance:'+str(all_distance))
-    print('==================spead:'+str(spead))
+    #print('==================distance:'+str(all_distance))
+    #print('==================spead:'+str(spead))
     all_distance = '%.2f' %(all_distance/100)
     spead = '%.2f' %(spead/100)
     return all_distance,str(spead)

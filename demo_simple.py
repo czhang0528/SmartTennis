@@ -118,8 +118,12 @@ def main():
                         #print(str(c1)+str(c2))
                         humans = e.inference(frame[c1[1]-15:c2[1]+15, c1[0]-40:c2[0]+30, :],
                                              resize_to_default=(w > 0 and h > 0), upsample_size=args.resize_out_ratio)
-                        frame[c1[1]-15:c2[1]+15, c1[0]-40:c2[0]+30, :],result_txt,Distance,Spead = TfPoseEstimator.draw_humans(
+                        frame[c1[1]-15:c2[1]+15, c1[0]-40:c2[0]+30, :],result_txt,mDistance,mSpead = TfPoseEstimator.draw_humans(
                             frame[c1[1]-15:c2[1]+15, c1[0]-40:c2[0]+30, :], humans, imgcopy=False)
+                        if not mDistance == '':
+                            Distance = mDistance
+                        if not mSpead == '':
+                            Spead = mSpead
                         if not result_txt == '' :
                             result_save = result_txt
                             print('==============================result:'+result_save)
@@ -151,13 +155,15 @@ def main():
             flag_boxs += 1
             #canvas = pose.detect_pose(frame[37:704,69:1153,:])
             #frame[37:704,69:1153,:] = canvas
+        color1 = [0,255,0]
         if result_frame < 10:
-            cv2.putText(frame,'Action:'+result_save,(int(140/b),int(400/b)) ,cv2.FONT_HERSHEY_PLAIN, 1.2, [0,255,0], 2)
-        cv2.putText(frame,'Distance:'+Distance,(int(140/b),int(400/b)+15) ,cv2.FONT_HERSHEY_PLAIN, 1.2, [0,255,0], 2)
-        cv2.putText(frame,'Spead:'+Spead,(int(140/b),int(400/b)+30) ,cv2.FONT_HERSHEY_PLAIN, 1.2, [0,255,0], 2)
+            cv2.putText(frame,'Action:'+result_save,(int(80/b),int(100/b)) ,cv2.FONT_HERSHEY_SIMPLEX, 0.7,color1, 2)
+        else:
+            cv2.putText(frame,'Action:'+result_save,(int(80/b),int(100/b)) ,cv2.FONT_HERSHEY_SIMPLEX, 0.7,color1, 2)
+        cv2.putText(frame,'Distance:'+Distance+'m',(int(80/b),int(100/b)+25) ,cv2.FONT_HERSHEY_SIMPLEX, 0.7,color1, 2)
+        cv2.putText(frame,'Spead:'+Spead+'m/s',(int(80/b),int(100/b)+50),cv2.FONT_HERSHEY_SIMPLEX, 0.7, color1, 2)
         result_frame +=1
-
-        cv2.putText(frame, "FPS: %.2f" % (1.0 / (time.time() - fps_time)), (20, 20),  cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.putText(frame, "FPS: %.2f" % (1.0 / (time.time() - fps_time)), (int(80/b),int(100/b)+75),  cv2.FONT_HERSHEY_SIMPLEX, 0.7,color1, 2)
         #cv2.putText(frame, "FPS: %.2f" % (1.0 / (time.time() - fps_time)), (10, 10),  cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
         #frame = cv2.resize(frame,(1280,720),interpolation=cv2.INTER_LINEAR) #(720,1280,3)
         cv2.imshow('', frame)
