@@ -8,4 +8,4 @@
 ### Test Inference
 - `python video_demo.py --video videofile`
 ### IP camera Inference
-- python demo_ip_camera --url [url]
+-  `python demo_ip_camera --url [url]
